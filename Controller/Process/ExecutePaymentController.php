@@ -10,9 +10,6 @@
 namespace Vespolina\CommerceBundle\Controller\Process;
 
 use Symfony\Component\HttpFoundation\Request;
-use Vespolina\CommerceBundle\Form\Type\Process\PaymentFormType;
-use Omnipay\Common\CreditCard;
-use Omnipay\Common\Exception\InvalidCreditCardException;
 
 class ExecutePaymentController extends AbstractProcessStepController
 {
@@ -20,14 +17,13 @@ class ExecutePaymentController extends AbstractProcessStepController
     {
         $processManager = $this->container->get('vespolina.process_manager');
         $request = $this->container->get('request');
-        $paymentForm = $this->createPaymentForm();
         $process = $this->getProcessStep()->getProcess();
         $cart = $process->getContext()->get('cart');
 
         $this
-            ->get('payum')
+            ->container->get('payum')
             ->getStorageForClass(
-                'Infrastructure\Payum\Entity\PaypalPaymentDetails',
+                'Infrastructure\Payum\Document\PaypalPaymentDetails',
                 'paypal_express_checkout'
             )
         ;
