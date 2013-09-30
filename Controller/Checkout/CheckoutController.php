@@ -23,9 +23,10 @@ class CheckoutController extends AbstractController
     {
         $processManager = $this->container->get('vespolina.process_manager');
         $processOwner = $this->container->get('session')->getId();
-        $checkoutProcess = $processManager->getActiveProcessByOwner('checkout_b2c', $processOwner);
+        $processName = 'checkout_short'; // before it was checkout_b2c
+        $checkoutProcess = $processManager->getActiveProcessByOwner($processName, $processOwner);
         if (null == $checkoutProcess) {
-            $checkoutProcess = $processManager->createProcess('checkout_b2c', $processOwner);
+            $checkoutProcess = $processManager->createProcess($processName, $processOwner);
             $checkoutProcess->init(true);   // initialize with first time set to true
             $context = $checkoutProcess->getContext();
             $context['cart'] = $this->getCart();

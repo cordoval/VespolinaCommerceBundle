@@ -24,9 +24,11 @@ class CompleteCheckoutController extends AbstractProcessStepController
         //Reset session cart
         $cart->clearItems();
 
-        //Todo: Kill this process in the user session
+        // Todo: Kill this process in the user session
 
         return $this->render('VespolinaCommerceBundle:Process:Step/completeCheckout.html.twig',
-            array('currentProcessStep' => $this->processStep));
+                array('currentProcessStep' => $this->processStep)
+            )
+        ;
     }
 }
