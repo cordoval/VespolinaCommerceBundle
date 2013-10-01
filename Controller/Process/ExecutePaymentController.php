@@ -9,6 +9,7 @@
 
 namespace Vespolina\CommerceBundle\Controller\Process;
 
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 
 class ExecutePaymentController extends AbstractProcessStepController
@@ -20,18 +21,40 @@ class ExecutePaymentController extends AbstractProcessStepController
         $process = $this->getProcessStep()->getProcess();
         $cart = $process->getContext()->get('cart');
 
-        $this
+        $paymentName = 'paypal_express_checkout';
+
+        $storage = $this
             ->container->get('payum')
             ->getStorageForClass(
-                'Infrastructure\Payum\Document\PaypalPaymentDetails',
-                'paypal_express_checkout'
+                'DecoupledStore\Domain\Model\PaypalPaymentDetails',
+                $paymentName
             )
         ;
+
+        $details = $storage->createModel();
+        $details->setPaymentrequestCurrencycode(0, 'USD');
+        $details->setPaymentrequestAmt(0,  1.00);
+        $storage->updateModel($details);
+
+        $captureToken = $this
+            ->container
+            ->get('payum.security.token_factory')
+            ->createCaptureToken(
+                $paymentName,
+                $details,
+                'redirect_after_capture' // the route to redirect after capture;
+            )
+        ;
+
+        $details->setInvnum($details->getId());
+        $details->setReturnurl($captureToken->getTargetUrl());
+        $details->setCancelurl($captureToken->getTargetUrl());
+        $storage->updateModel($details);
+
         // Signal enclosing process step that we are done here
         $process->completeProcessStep($this->processStep);
         $processManager->updateProcess($process);
-        $this->container->get('session')->getFlashBag()->add('success', 'The transaction was successful.');
 
-        return $process->execute();
+        return new RedirectResponse($captureToken->getTargetUrl());
     }
 }
