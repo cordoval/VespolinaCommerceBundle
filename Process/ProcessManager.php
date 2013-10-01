@@ -47,7 +47,7 @@ class ProcessManager extends ContainerAware implements ProcessManagerInterface
     {
         $processContextFound = null;
 
-        //For now we just use the session
+        // For now we just use the session
 
         $processes = $this->session->get('processes', array());
         foreach($processes as $processName => $processContext) {
@@ -94,7 +94,8 @@ class ProcessManager extends ContainerAware implements ProcessManagerInterface
     protected function getClassMap()
     {
         return array(
-            'checkout_b2c' =>  'Vespolina\CommerceBundle\ProcessScenario\Checkout\CheckoutProcessB2C'
+            'checkout_b2c' =>  'Vespolina\CommerceBundle\ProcessScenario\Checkout\CheckoutProcessB2C',
+            'checkout_short' => 'Vespolina\CommerceBundle\ProcessScenario\Checkout\CheckoutShortProcess'
         );
     }
 }

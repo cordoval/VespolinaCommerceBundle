@@ -28,17 +28,14 @@ class ExecutePayment extends AbstractProcessStep
         $customerIdentified = false;
 
         if (!$customerIdentified) {
-
             $controller = $this->getController('Vespolina\CommerceBundle\Controller\Process\ExecutePaymentController');
             $controller->setProcessStep($this);
             $controller->setContainer($this->process->getContainer());
 
             return $controller->executeAction();
         } else {
-
-            return true;    //Todo encapsulate return value
+            return true;    // Todo encapsulate return value
         }
-
     }
 
     public function getName()

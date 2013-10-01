@@ -9,10 +9,8 @@
 
 namespace Vespolina\CommerceBundle\Controller\Process;
 
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Vespolina\CommerceBundle\Form\Type\Process\PaymentFormType;
-use Omnipay\Common\CreditCard;
-use Omnipay\Common\Exception\InvalidCreditCardException;
 
 class ExecutePaymentController extends AbstractProcessStepController
 {
@@ -20,52 +18,43 @@ class ExecutePaymentController extends AbstractProcessStepController
     {
         $processManager = $this->container->get('vespolina.process_manager');
         $request = $this->container->get('request');
-        $paymentForm = $this->createPaymentForm();
-        $paymentGateway = $this->container->get('vespolina_commerce.payment_gateway.paypal_pro');
-        if ($this->isPostForForm($request, $paymentForm)) {
-            $paymentForm->bind($request);
-            /** @var CreditCard $creditCard */
-            $creditCard = $paymentForm->getData();
-            // For now use Omnipay\Common\CreditCard's native validate()
-            // method but validation should be moved to a yml file using
-            // the Symfony2 validation component
-            try {
-                $creditCard->validate();
-                $response = $paymentGateway->purchase(array('amount' => '10.00', 'card' => $creditCard))->send();
-                if ($response->isSuccessful()) {
-                    $process = $this->processStep->getProcess();
-                    //Signal enclosing process step that we are done here
-                    $process->completeProcessStep($this->processStep);
-                    $processManager->updateProcess($process);
-                    $this->container->get('session')->getFlashBag()->add('success', 'The transaction was successful.');
+        $process = $this->getProcessStep()->getProcess();
+        $cart = $process->getContext()->get('cart');
 
-                    return $process->execute();
-                } else {
-                    $this->container->get('session')->getFlashBag()->add('danger', $response->getMessage());
-                }
-            } catch(InvalidCreditCardException $e) {
-                $this->container->get('session')->getFlashBag()->add('danger', $e->getMessage());
-            }
-        }
+        $paymentName = 'paypal_express_checkout';
 
-        return $this->render('VespolinaCommerceBundle:Process:Step/executePayment.html.twig',
-            array(
-                'context' => $this->processStep->getContext(),
-                'currentProcessStep' => $this->processStep,
-                'paymentForm' => $paymentForm->createView()
+        $storage = $this
+            ->container->get('payum')
+            ->getStorageForClass(
+                'DecoupledStore\Domain\Model\PaypalPaymentDetails',
+                $paymentName
             )
-        );
-    }
+        ;
 
+        $details = $storage->createModel();
+        $details->setPaymentrequestCurrencycode(0, 'USD');
+        $details->setPaymentrequestAmt(0,  1.00);
+        $storage->updateModel($details);
 
-    /**
-     * @return \Symfony\Component\Form\Form
-     */
-    protected function createPaymentForm()
-    {
-        $creditCard = new CreditCard();
-        $paymentForm = $this->container->get('form.factory')->create(new PaymentFormType(), $creditCard, array());
+        $captureToken = $this
+            ->container
+            ->get('payum.security.token_factory')
+            ->createCaptureToken(
+                $paymentName,
+                $details,
+                'redirect_after_capture' // the route to redirect after capture;
+            )
+        ;
 
-        return $paymentForm;
+        $details->setInvnum($details->getId());
+        $details->setReturnurl($captureToken->getTargetUrl());
+        $details->setCancelurl($captureToken->getTargetUrl());
+        $storage->updateModel($details);
+
+        // Signal enclosing process step that we are done here
+        $process->completeProcessStep($this->processStep);
+        $processManager->updateProcess($process);
+
+        return new RedirectResponse($captureToken->getTargetUrl());
     }
 }

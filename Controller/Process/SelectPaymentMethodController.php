@@ -29,7 +29,7 @@ class SelectPaymentMethodController extends AbstractProcessStepController
                 $process = $this->processStep->getProcess();
                 $this->processStep->getContext()->set('payment_method', $selectPaymentMethodForm->getData());
 
-                //Signal enclosing process step that we are done here
+                // Signal enclosing process step that we are done here
                 $process->completeProcessStep($this->processStep);
                 $processManager->updateProcess($process);
 

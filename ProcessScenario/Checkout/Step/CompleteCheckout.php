@@ -28,7 +28,7 @@ class CompleteCheckout extends AbstractProcessStep
 
     public function execute(&$context)
     {
-        //Copy cart -> sales order
+        // Copy cart -> sales order
         $cart = $this->getContext()->get('cart');
 
         $salesOrderManager = $this->getProcess()->getContainer()->get('vespolina.order_manager');
@@ -37,14 +37,14 @@ class CompleteCheckout extends AbstractProcessStep
         if (null != $salesOrder) {
             $salesOrderManager->updateOrder($salesOrder, true);
 
-            //Notify involved partners about the sales order.  Tod: Move into a dispatcher event listener
+            // Notify involved partners about the sales order.  Todo: Move into a dispatcher event listener
             $this->notifyPartners($salesOrder);
         }
-        //Reset session cart
+        // Reset session cart
         $cart->clearItems();
 
-        //Signal enclosing process step that we are done here
-//        $this->complete();
+        // Signal enclosing process step that we are done here
+        // $this->complete();
 
         $controller = $this->getController('Vespolina\CommerceBundle\Controller\Process\CompleteCheckoutController');
         $controller->setProcessStep($this);
@@ -90,7 +90,7 @@ class CompleteCheckout extends AbstractProcessStep
 
     protected function notifyPartners(OrderInterface $salesOrder)
     {
-        //Notify the customer
+        // Notify the customer
         $dispatcher = $this->getProcess()->getContainer()->get('event_dispatcher');
         $event = new CheckoutEvent($salesOrder);
         $dispatcher->dispatch(OrderEvents::CHECKOUT_COMPLETED, $event);
